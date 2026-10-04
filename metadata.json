@@ -1,0 +1,6 @@
+{
+  "name": "NicoFollow - ニコニコ相互フォローチェッカー",
+  "description": "ニコニコ動画のフォロー・フォロワーを自動解析し、相互フォローや片思いアカウントを判定するツールです。「さらに表示する」全件自動巡回に対応。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
