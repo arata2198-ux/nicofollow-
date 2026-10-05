@@ -8,6 +8,8 @@ import { Header } from './components/Header';
 import { ScannerInput } from './components/ScannerInput';
 import { UserOverview } from './components/UserOverview';
 import { UserListTable } from './components/UserListTable';
+import { Footer } from './components/Footer';
+import { LegalModals, LegalModalType } from './components/LegalModals';
 import {
   ScanResult,
   ScanProgress,
@@ -56,6 +58,7 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('notFollowingBack');
+  const [legalModal, setLegalModal] = useState<LegalModalType>(null);
 
   // Rate Limiting State (Daily 3 scans & 60 min cooldown)
   const [rateLimit, setRateLimit] = useState<RateLimitData>(() => {
@@ -354,10 +357,15 @@ export default function App() {
         )}
       </main>
 
-      {/* Clean Minimal Footer */}
-      <footer className="mt-auto border-t border-slate-900 bg-slate-950 py-4 text-center text-xs text-slate-600">
-        <span>NicoFollow</span>
-      </footer>
+      {/* AdSense Compliant Footer */}
+      <Footer onOpenModal={setLegalModal} />
+
+      {/* Legal & Policy Modals */}
+      <LegalModals
+        activeModal={legalModal}
+        onClose={() => setLegalModal(null)}
+        onOpenModal={setLegalModal}
+      />
     </div>
   );
 }
