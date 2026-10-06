@@ -2,6 +2,12 @@ import React from 'react';
 import { Search, Loader2, ArrowRight, AlertCircle, Clock, CheckCircle } from 'lucide-react';
 import { ScanProgress } from '../types/niconico';
 
+interface CachedScanSummary {
+  userId: number;
+  nickname: string;
+  timestamp: number;
+}
+
 interface ScannerInputProps {
   inputValue: string;
   onInputChange: (val: string) => void;
@@ -14,6 +20,10 @@ interface ScannerInputProps {
   maxScans: number;
   isInCooldown: boolean;
   cooldownText: string;
+  cachedScans?: CachedScanSummary[];
+  onSelectCachedScan?: (userId: number) => void;
+  hasActiveResult?: boolean;
+  onClearActiveResult?: () => void;
 }
 
 export const ScannerInput: React.FC<ScannerInputProps> = ({
@@ -28,6 +38,10 @@ export const ScannerInput: React.FC<ScannerInputProps> = ({
   maxScans,
   isInCooldown,
   cooldownText,
+  cachedScans = [],
+  onSelectCachedScan,
+  hasActiveResult = false,
+  onClearActiveResult,
 }) => {
   const canSubmit = !isScanning && !isInCooldown && remainingScans > 0 && !!inputValue.trim();
 
@@ -139,6 +153,38 @@ export const ScannerInput: React.FC<ScannerInputProps> = ({
               )}
             </button>
           </div>
+
+          {/* Quick Recent History Chips */}
+          {cachedScans.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 pt-2 text-xs">
+              <span className="text-slate-400 font-medium">🕒 保存済み履歴（即時表示）:</span>
+              {cachedScans.map((item) => (
+                <button
+                  key={item.userId}
+                  type="button"
+                  onClick={() => onSelectCachedScan?.(item.userId)}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/90 hover:bg-cyan-950/80 hover:text-cyan-300 border border-slate-700 hover:border-cyan-500/50 text-slate-300 transition-all font-mono text-[11px] flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  title="クリックで過去のスキャン結果を即時表示（制限は消費しません）"
+                >
+                  <span className="font-semibold">{item.nickname || `ID:${item.userId}`}</span>
+                  <span className="text-[10px] text-slate-500">ID:{item.userId}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Active Result Notice */}
+          {hasActiveResult && (
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs px-3 py-2 rounded-xl bg-cyan-950/30 border border-cyan-800/40 text-cyan-300">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span>スキャン結果をブラウザに自動保存中（更新しても消えません）</span>
+              </div>
+              <span className="text-[11px] text-slate-400">
+                タブ切替・並替・CSV出力は自由に操作可能
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Error notification if any */}

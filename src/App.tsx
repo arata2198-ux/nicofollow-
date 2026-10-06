@@ -27,6 +27,13 @@ interface RateLimitData {
   lastScanTimestamp: number | null;
 }
 
+interface CachedScanEntry {
+  userId: number;
+  nickname: string;
+  timestamp: number;
+  result: ScanResult;
+}
+
 function getTodayString(): string {
   const d = new Date();
   const year = d.getFullYear();
@@ -53,12 +60,43 @@ function parseUserId(input: string): number | null {
 }
 
 export default function App() {
-  const [inputValue, setInputValue] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-  const [activeTab, setActiveTab] = useState<TabKey>('notFollowingBack');
   const [legalModal, setLegalModal] = useState<LegalModalType>(null);
+  const [activeTab, setActiveTab] = useState<TabKey>('notFollowingBack');
+
+  // Load cached scan results so page refreshes don't lose data
+  const [scanResult, setScanResult] = useState<ScanResult | null>(() => {
+    try {
+      const saved = localStorage.getItem('nicofollow_last_scan_result');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [cachedHistory, setCachedHistory] = useState<CachedScanEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem('nicofollow_cached_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [inputValue, setInputValue] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('nicofollow_last_scan_result');
+      if (saved) {
+        const parsed: ScanResult = JSON.parse(saved);
+        if (parsed?.user?.id) {
+          return `https://www.nicovideo.jp/user/${parsed.user.id}`;
+        }
+      }
+    } catch {}
+    return '';
+  });
+
+  const [isScanning, setIsScanning] = useState(false);
 
   // Rate Limiting State (Daily 3 scans & 60 min cooldown)
   const [rateLimit, setRateLimit] = useState<RateLimitData>(() => {
@@ -228,6 +266,27 @@ export default function App() {
         });
         sse.close();
 
+        // Persist scan result to localStorage so refresh retains data!
+        try {
+          localStorage.setItem('nicofollow_last_scan_result', JSON.stringify(data));
+        } catch {}
+
+        // Add to cached history for instant switching
+        const newCacheEntry: CachedScanEntry = {
+          userId: data.user.id,
+          nickname: data.user.nickname,
+          timestamp: Date.now(),
+          result: data,
+        };
+        setCachedHistory((prev) => {
+          const filtered = prev.filter((p) => p.userId !== data.user.id);
+          const updated = [newCacheEntry, ...filtered].slice(0, 5);
+          try {
+            localStorage.setItem('nicofollow_cached_history', JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+
         // Record scan for rate-limiting (3/day & 60-min cooldown)
         const updatedDate = getTodayString();
         const updatedRateLimit: RateLimitData = {
@@ -303,6 +362,27 @@ export default function App() {
     };
   }, []);
 
+  const handleSelectCachedScan = useCallback(
+    (userId: number) => {
+      const entry = cachedHistory.find((item) => item.userId === userId);
+      if (entry) {
+        setScanResult(entry.result);
+        setInputValue(`https://www.nicovideo.jp/user/${entry.userId}`);
+        try {
+          localStorage.setItem('nicofollow_last_scan_result', JSON.stringify(entry.result));
+        } catch {}
+      }
+    },
+    [cachedHistory]
+  );
+
+  const handleClearActiveResult = useCallback(() => {
+    setScanResult(null);
+    try {
+      localStorage.removeItem('nicofollow_last_scan_result');
+    } catch {}
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
       {/* Top Bar */}
@@ -328,6 +408,14 @@ export default function App() {
             maxScans={MAX_DAILY_SCANS}
             isInCooldown={isInCooldown}
             cooldownText={cooldownText}
+            cachedScans={cachedHistory.map((c) => ({
+              userId: c.userId,
+              nickname: c.nickname,
+              timestamp: c.timestamp,
+            }))}
+            onSelectCachedScan={handleSelectCachedScan}
+            hasActiveResult={!!scanResult}
+            onClearActiveResult={handleClearActiveResult}
           />
         </div>
 
