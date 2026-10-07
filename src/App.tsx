@@ -68,19 +68,35 @@ export default function App() {
   const [scanResult, setScanResult] = useState<ScanResult | null>(() => {
     try {
       const saved = localStorage.getItem('nicofollow_last_scan_result');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (
+          parsed &&
+          parsed.user &&
+          typeof parsed.user === 'object' &&
+          parsed.stats &&
+          typeof parsed.stats === 'object' &&
+          Array.isArray(parsed.followings) &&
+          Array.isArray(parsed.followers)
+        ) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return null;
   });
 
   const [cachedHistory, setCachedHistory] = useState<CachedScanEntry[]>(() => {
     try {
       const saved = localStorage.getItem('nicofollow_cached_history');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item) => item && typeof item === 'object' && item.userId);
+        }
+      }
+    } catch {}
+    return [];
   });
 
   const [inputValue, setInputValue] = useState<string>(() => {
@@ -376,10 +392,14 @@ export default function App() {
     [cachedHistory]
   );
 
-  const handleClearActiveResult = useCallback(() => {
+  const handleClearHistory = useCallback(() => {
+    setCachedHistory([]);
     setScanResult(null);
+    setInputValue('');
     try {
       localStorage.removeItem('nicofollow_last_scan_result');
+      localStorage.removeItem('nicofollow_cached_history');
+      localStorage.removeItem('nicofollow_snapshots');
     } catch {}
   }, []);
 
@@ -408,29 +428,40 @@ export default function App() {
             maxScans={MAX_DAILY_SCANS}
             isInCooldown={isInCooldown}
             cooldownText={cooldownText}
-            cachedScans={cachedHistory.map((c) => ({
-              userId: c.userId,
-              nickname: c.nickname,
-              timestamp: c.timestamp,
-            }))}
+            cachedScans={(cachedHistory || [])
+              .filter((c) => c && c.userId)
+              .map((c) => ({
+                userId: c.userId,
+                nickname: c.nickname || `ID:${c.userId}`,
+                timestamp: c.timestamp || Date.now(),
+              }))}
             onSelectCachedScan={handleSelectCachedScan}
-            hasActiveResult={!!scanResult}
-            onClearActiveResult={handleClearActiveResult}
+            hasActiveResult={!!(scanResult && scanResult.user)}
+            onClearHistory={handleClearHistory}
           />
         </div>
 
         {/* Results Area */}
-        {scanResult && (
+        {scanResult && scanResult.user && scanResult.stats && (
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Account Overview & Key Metrics */}
             <UserOverview
               user={scanResult.user}
               stats={scanResult.stats}
-              diff={scanResult.diff}
+              diff={
+                scanResult.diff || {
+                  hasPreviousSnapshot: false,
+                  previousTimestamp: null,
+                  unfollowedBy: [],
+                  lostMutual: [],
+                  newFollowers: [],
+                }
+              }
               onSelectTab={(tab) => setActiveTab(tab)}
               lastScannedTime={
                 snapshots.length > 0 ? snapshots[0].timestamp : null
               }
+              onClearHistory={handleClearHistory}
             />
 
             {/* Detailed User Table & Tabs */}

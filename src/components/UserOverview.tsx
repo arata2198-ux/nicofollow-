@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, UserCheck, UserX, Users, UserPlus, AlertTriangle, ArrowUpRight } from 'lucide-react';
+import { ExternalLink, UserCheck, UserX, Users, UserPlus, AlertTriangle, ArrowUpRight, Trash2 } from 'lucide-react';
 import { UserProfile, ScanStats, DiffResult } from '../types/niconico';
 
 interface UserOverviewProps {
@@ -8,6 +8,7 @@ interface UserOverviewProps {
   diff: DiffResult;
   onSelectTab: (tab: any) => void;
   lastScannedTime: string | null;
+  onClearHistory?: () => void;
 }
 
 export const UserOverview: React.FC<UserOverviewProps> = ({
@@ -16,7 +17,12 @@ export const UserOverview: React.FC<UserOverviewProps> = ({
   diff,
   onSelectTab,
   lastScannedTime,
+  onClearHistory,
 }) => {
+  if (!user || !stats) {
+    return null;
+  }
+
   return (
     <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-5 sm:p-6 backdrop-blur-sm shadow-xl space-y-6">
       {/* Account Info Header */}
@@ -68,6 +74,18 @@ export const UserOverview: React.FC<UserOverviewProps> = ({
             </div>
           </div>
         </div>
+
+        {onClearHistory && (
+          <button
+            type="button"
+            onClick={onClearHistory}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-rose-300 hover:text-white bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/60 rounded-xl transition-all shadow-sm cursor-pointer self-start sm:self-center shrink-0"
+            title="画面の表示結果と履歴を削除します"
+          >
+            <Trash2 className="w-4 h-4 text-rose-400" />
+            <span>履歴・結果を削除</span>
+          </button>
+        )}
       </div>
 
       {/* Metric Cards Grid */}

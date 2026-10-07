@@ -42,39 +42,40 @@ export const UserListTable: React.FC<UserListTableProps> = ({
 
   // Map followers and followings for quick lookup
   const followerIdSet = useMemo(
-    () => new Set(scanResult.followers.map((u) => u.id)),
-    [scanResult.followers]
+    () => new Set((scanResult?.followers || []).map((u) => u.id)),
+    [scanResult?.followers]
   );
   const followingIdSet = useMemo(
-    () => new Set(scanResult.followings.map((u) => u.id)),
-    [scanResult.followings]
+    () => new Set((scanResult?.followings || []).map((u) => u.id)),
+    [scanResult?.followings]
   );
 
   // Determine current list based on active tab
   const rawList = useMemo(() => {
+    if (!scanResult) return [];
     switch (activeTab) {
       case 'notFollowingBack':
-        return scanResult.notFollowingBack;
+        return scanResult.notFollowingBack || [];
       case 'lostMutual':
         // Combines lost mutual and unfollowed
+        const lostMutual = scanResult?.diff?.lostMutual || [];
+        const unfollowedBy = scanResult?.diff?.unfollowedBy || [];
         return [
-          ...scanResult.diff.lostMutual,
-          ...scanResult.diff.unfollowedBy.filter(
-            (u) => !scanResult.diff.lostMutual.some((lm) => lm.id === u.id)
-          ),
+          ...lostMutual,
+          ...unfollowedBy.filter((u) => !lostMutual.some((lm) => lm.id === u.id)),
         ];
       case 'mutual':
-        return scanResult.mutual;
+        return scanResult.mutual || [];
       case 'fans':
-        return scanResult.fans;
+        return scanResult.fans || [];
       case 'newFollowers':
-        return scanResult.diff.newFollowers;
+        return scanResult?.diff?.newFollowers || [];
       case 'allFollowing':
-        return scanResult.followings;
+        return scanResult.followings || [];
       case 'allFollowers':
-        return scanResult.followers;
+        return scanResult.followers || [];
       default:
-        return scanResult.notFollowingBack;
+        return scanResult.notFollowingBack || [];
     }
   }, [activeTab, scanResult]);
 
