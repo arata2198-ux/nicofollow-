@@ -465,6 +465,18 @@ async function startServer() {
     res.json({ success: true });
   });
 
+  // Robots.txt
+  app.get('/robots.txt', (_req, res) => {
+    res.type('text/plain');
+    res.send('User-agent: *\nAllow: /\n\nUser-agent: Mediapartners-Google\nAllow: /\n');
+  });
+
+  // ads.txt for Google AdSense
+  app.get('/ads.txt', (_req, res) => {
+    res.type('text/plain');
+    res.send('google.com, pub-5113408713918359, DIRECT, f08c47fec0942fa0\n');
+  });
+
   // Download project source code zip
   app.get('/download-code', (_req, res) => {
     const zipPath = path.resolve(__dirname, 'public/nicofollow-files.zip');
