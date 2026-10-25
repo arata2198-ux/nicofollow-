@@ -10,6 +10,7 @@ import { UserOverview } from './components/UserOverview';
 import { UserListTable } from './components/UserListTable';
 import { Footer } from './components/Footer';
 import { LegalModals, LegalModalType } from './components/LegalModals';
+import { SiteGuideContent } from './components/SiteGuideContent';
 import {
   ScanResult,
   ScanProgress,
@@ -441,8 +442,8 @@ export default function App() {
           />
         </div>
 
-        {/* Results Area */}
-        {scanResult && scanResult.user && scanResult.stats && (
+        {/* Results Area or Default High-Value Guide Content */}
+        {scanResult && scanResult.user && scanResult.stats ? (
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Account Overview & Key Metrics */}
             <UserOverview
@@ -472,7 +473,15 @@ export default function App() {
               whitelist={whitelist}
               onToggleWhitelist={toggleWhitelist}
             />
+
+            {/* Guide content also available below results */}
+            <div className="pt-8 border-t border-slate-800">
+              <SiteGuideContent />
+            </div>
           </div>
+        ) : (
+          /* Default state when visiting landing page (Crucial for AdSense review bot) */
+          <SiteGuideContent />
         )}
       </main>
 
